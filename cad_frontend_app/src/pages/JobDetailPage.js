@@ -7,7 +7,7 @@ import ResultPreview from '../components/ResultPreview';
 export default function JobDetailPage() {
   /** Job detail page, polls until job is complete, showing settings and outputs. */
   const { id } = useParams();
-  const { job, loading, done, reload } = useJobPolling(id, 2000);
+  const { job, loading, reload } = useJobPolling(id, 2000);
 
   const status = (job?.status || '').toLowerCase();
   const badgeClass = status === 'completed' ? 'ok' : status === 'failed' ? 'err' : 'warn';

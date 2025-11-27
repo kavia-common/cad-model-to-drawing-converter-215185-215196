@@ -23,6 +23,12 @@ export function useAuthProvider() {
     const navigate = useNavigate?.() || (() => {});
     const location = useLocation?.() || { pathname: '/' };
 
+    // Memoize 'from' value to avoid unstable dependencies in login
+    const loginFrom = useMemo(
+      () => (location.state && location.state.from) || '/dashboard',
+      [location.state]
+    );
+
     useEffect(() => {
       if (token) localStorage.setItem('auth_token', token);
       else localStorage.removeItem('auth_token');
@@ -33,26 +39,34 @@ export function useAuthProvider() {
       else localStorage.removeItem('auth_user');
     }, [user]);
 
+    // Memoize navigation replacements to avoid excessive re-renders
+    const stableNavigate = useCallback(
+      (...args) => navigate(...args),
+      [navigate]
+    );
+
     const login = useCallback(async (email, password) => {
       setLoading(true);
       try {
         const jwt = await loginRequest(email, password);
         setToken(jwt);
         setUser({ email });
-        const from = (location.state && location.state.from) || '/dashboard';
-        navigate(from, { replace: true });
+        stableNavigate(loginFrom, { replace: true });
       } finally {
         setLoading(false);
       }
-    }, [location.state, navigate]);
+    }, [loginFrom, stableNavigate]);
 
     const logout = useCallback(() => {
       setToken('');
       setUser(null);
-      navigate('/login', { replace: true });
-    }, [navigate]);
+      stableNavigate('/login', { replace: true });
+    }, [stableNavigate]);
 
-    const value = useMemo(() => ({ token, user, login, logout, loading, isAuthenticated: !!token }), [token, user, login, logout, loading]);
+    const value = useMemo(
+      () => ({ token, user, login, logout, loading, isAuthenticated: !!token }),
+      [token, user, login, logout, loading]
+    );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
   };
