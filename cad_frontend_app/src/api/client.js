@@ -1,4 +1,6 @@
-import axios from 'axios';
+import axios from 'axios/dist/browser/axios.cjs';
+// Force browser adapter to avoid Node 'crypto' import in Cypress/Electron
+axios.defaults.adapter = undefined;
 
 /**
  * API client with Authorization interceptor. Base URL is taken from
@@ -35,7 +37,10 @@ api.interceptors.response.use(
 // PUBLIC_INTERFACE
 export async function loginRequest(email, password) {
   /** Perform login and return JWT token. */
-  const res = await api.post('/auth/login', { email, password });
+  const params = new URLSearchParams();
+  params.append('username', email);
+  params.append('password', password);
+  const res = await api.post('/auth/login', params, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
   // Expecting `{ access_token: '...' }` or `{ token: '...' }`
   const token = res.data?.access_token || res.data?.token;
   if (!token) throw new Error('Invalid login response: token missing');
